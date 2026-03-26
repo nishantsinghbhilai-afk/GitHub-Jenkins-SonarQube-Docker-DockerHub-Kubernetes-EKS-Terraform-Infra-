@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "yourdockerhub/devops-app"
+    }
+
+    stages {
+
+        stage('Clone Code') {
+            steps {
+                git 'https://github.com/yourusername/DevOps-CI-CD-K8s-AWS-Project.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE ./app'
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                    sh 'docker push $DOCKER_IMAGE'
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f k8s/'
+            }
+        }
+    }
+}
